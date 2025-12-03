@@ -1,94 +1,48 @@
 pipeline {
-    agent any
-
+    agent { label 'slave2' }
+    
     stages {
-
-        stage('Check & Install Java') {
+        stage('Checkout') {
             steps {
-                sh '''
-                    echo "=== Checking Java ==="
-                    if java -version >/dev/null 2>&1; then
-                        echo "Java already installed"
-                        java -version
-                    else
-                        echo "Installing Java 17..."
-                        sudo apt update -y
-                        sudo apt install -y openjdk-17-jdk
-                        java -version
-                    fi
-                '''
+                git branch: 'feature-2', url: 'https://github.com/SwetaRath/news-app-devops.git'
             }
         }
-
-        stage('Check & Install Maven') {
+        stage('Build') {
             steps {
-                sh '''
-                    echo "=== Checking Maven ==="
-                    if mvn -version >/dev/null 2>&1; then
-                        echo "Maven already installed"
-                        mvn -version
-                    else
-                        echo "Installing Maven..."
-                        sudo apt install -y maven
-                        mvn -version
-                    fi
-                '''
+                sh 'mvn clean package -DskipTests=false'
             }
         }
-
-        stage('Check & Install Tomcat 10') {
+        stage('Run Tests') {
             steps {
-                sh '''
-                    echo "=== Checking Tomcat ==="
-                    if [ -d "/opt/tomcat10" ]; then
-                        echo "Tomcat already installed in /opt/tomcat10"
-                    else
-                        echo "Installing Tomcat 10..."
-                        cd /opt
-                        sudo wget https://archive.apache.org/dist/tomcat/tomcat-10/v10.1.30/bin/apache-tomcat-10.1.30.tar.gz
-                        sudo tar -xzf apache-tomcat-10.1.30.tar.gz
-                        sudo mv apache-tomcat-10.1.30 tomcat10
-                        sudo chmod +x /opt/tomcat10/bin/*.sh
-                    fi
-                '''
-            }
-        }
-
-        stage('Build WAR File') {
-            steps {
-                sh '''
-                    echo "=== Building WAR ==="
-                    mvn clean package -DskipTests
-                '''
+                sh 'mvn test'
             }
         }
 
         stage('Deploy WAR to Tomcat') {
             steps {
                 sh '''
-                    echo "=== Stopping Tomcat ==="
-                    sudo /opt/tomcat10/bin/shutdown.sh || true
+                    TOMCAT_PATH="/opt/tomcat10/webapps"
+                    WAR_FILE="target/news-app.war"
 
-                    echo "=== Removing old deployment ==="
-                    sudo rm -rf /opt/tomcat10/webapps/news-app
-                    sudo rm -f /opt/tomcat10/webapps/news-app.war
+                    echo "Cleaning old deployment..."
+                    sudo rm -rf $TOMCAT_PATH/news-app $TOMCAT_PATH/news-app.war
 
-                    echo "=== Deploying new WAR ==="
-                    sudo cp target/news-app.war /opt/tomcat10/webapps/
+                    echo "Copying new WAR..."
+                    sudo cp $WAR_FILE $TOMCAT_PATH/
 
-                    echo "=== Starting Tomcat ==="
-                    sudo /opt/tomcat10/bin/startup.sh
+                    echo "Restarting Tomcat..."
+                    pkill -f 'org.apache.catalina.startup.Bootstrap' || true
+                    nohup $TOMCAT_PATH/../bin/startup.sh &
                 '''
             }
         }
     }
-
     post {
         success {
-            echo "Deployment completed successfully!"
+            echo 'Build and deployment completed successfully!'
         }
         failure {
-            echo "Deployment failed!"
-        }
-    }
+            echo 'Build or deployment failed. Check logs for details.'
+        }
+    }
 }
