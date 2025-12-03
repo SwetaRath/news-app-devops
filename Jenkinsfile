@@ -1,24 +1,27 @@
 pipeline {
     agent { label 'slave2' }
-
+    
     stages {
         stage('Checkout') {
             steps {
                 git branch: 'feature-2', url: 'https://github.com/SwetaRath/news-app-devops.git'
             }
         }
-
         stage('Build') {
             steps {
                 sh 'mvn clean package -DskipTests=false'
             }
         }
-
         stage('Run Tests') {
             steps {
                 sh 'mvn test'
             }
         }
+        stage('Check User') {
+    steps {
+        sh 'whoami'
+    }
+}
 
         stage('Deploy WAR to Tomcat') {
             steps {
@@ -39,7 +42,6 @@ pipeline {
             }
         }
     }
-
     post {
         success {
             echo 'Build and deployment completed successfully!'
