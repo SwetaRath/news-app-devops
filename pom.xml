@@ -66,4 +66,10 @@
       </plugin>
     </plugins>
   </build>
+         <distributionManagement>
+                  <repository>
+                          <id><artifactory-releases></id>
+                           <url>https://trial80p3wb.jfrog.io/artifactory/news-app/</url>
+                  </repository>
+         </distributionManagement>
 </project>
