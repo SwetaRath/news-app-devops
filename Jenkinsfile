@@ -1,17 +1,19 @@
 pipeline {
     agent { label 'slave2' }
-    
+
     stages {
         stage('Checkout') {
             steps {
                 git branch: 'feature-2', url: 'https://github.com/SwetaRath/news-app-devops.git'
             }
         }
+
         stage('Build') {
             steps {
                 sh 'mvn clean package -DskipTests=false'
             }
         }
+
         stage('Run Tests') {
             steps {
                 sh 'mvn test'
@@ -37,12 +39,13 @@ pipeline {
             }
         }
     }
+
     post {
         success {
             echo 'Build and deployment completed successfully!'
         }
         failure {
             echo 'Build or deployment failed. Check logs for details.'
-        }
-    }
+        }
+    }
 }
