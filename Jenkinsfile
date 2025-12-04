@@ -1,6 +1,14 @@
 pipeline {
     agent { label 'slave2' }
-    
+    environment {
+        // REPLACE these two values
+        ART_URL = 'https://trial80p3wb.jfrog.io'   // <- replace with your Artifactory URL
+        TARGET_REPO = '16-libs-release-local'                  // <- replace with repo name (generic-local, libs-release-local, etc.)
+
+        // Jenkins credential containing JFrog API Key / token (Secret Text)
+        ART_API_KEY = credentials('jfrog-token')
+    }
+
     stages {
         stage('Checkout') {
             steps {
