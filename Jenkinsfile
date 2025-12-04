@@ -3,7 +3,7 @@ pipeline {
 
     environment {
         TOMCAT_PATH = "/opt/tomcat10/webapps"
-        WAR_FILE = "target/news-app.war"
+        WAR_FILE    = "target/news-app.war"
     }
 
     stages {
@@ -53,34 +53,43 @@ pipeline {
             }
         }
 
-stage('Push the artifacts into JFrog Artifactory') {
-    steps {
-        script {
-            // Get the current date and time in the format: yyyy-MM-dd_HH-mm
-            def currentDate = new java.text.SimpleDateFormat("yyyy-MM-dd_HH-mm").format(new Date())
-
-            // Define the target path with the timestamp
-            def targetPath = "16-libs-release/${currentDate}/"
-
-            // Resolve the Artifactory server (ensure 'ART' exists as a configured server ID)
-            def server = Artifactory.server('ART')   // <-- change 'ART' if your server ID is different
-
-            // Define upload spec
-            def uploadSpec = """{
-                "files": [
-                    {
-                        "pattern": "${WAR_FILE}",
-                        "target": "${targetPath}"
+        stage('Push the artifacts into JFrog Artifactory') {
+            steps {
+                script {
+                    // Ensure WAR exists on the agent before attempting upload
+                    if (!fileExists(env.WAR_FILE)) {
+                        error "Artifact not found: ${env.WAR_FILE}"
                     }
-                ]
-            }"""
 
-            // Upload to Artifactory
-            rtUpload server: server, spec: uploadSpec
+                    // Get the current date and time in the format: yyyy-MM-dd_HH-mm
+                    def currentDate = new java.text.SimpleDateFormat("yyyy-MM-dd_HH-mm").format(new Date())
+
+                    // Define the target path with the timestamp
+                    def targetPath = "16-libs-release/${currentDate}/"
+
+                    // Resolve the Artifactory server (ensure 'ART' exists as a configured server ID)
+                    // Replace 'ART' with your actual server ID if different
+                    def server = Artifactory.server('ART')
+
+                    // local war variable (use env to get pipeline env var)
+                    def war = env.WAR_FILE
+
+                    // Define upload spec (rtUpload expects a spec string or map)
+                    def uploadSpec = """{
+                        "files": [
+                            {
+                                "pattern": "${war}",
+                                "target": "${targetPath}"
+                            }
+                        ]
+                    }"""
+
+                    // Upload to Artifactory
+                    rtUpload server: server, spec: uploadSpec
+                }
+            }
         }
-    }
-}
- // end stages
+    } // end stages
 
     post {
         success {
