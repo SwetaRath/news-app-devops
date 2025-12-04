@@ -52,10 +52,30 @@ pipeline {
             }
         }
 
-        rtUpload()
-rtDownload()
-rtServer()
-rtBuildInfo()
+        stage('Push the artifacts into JFrog Artifactory') {
+    steps {
+        script {
+            // Define the server (matches Jenkins > Manage Credentials > Artifactory)
+            def server = Artifactory.server('jfrog')
+
+            def currentDate = new java.text.SimpleDateFormat("yyyy-MM-dd_HH-mm").format(new Date())
+            def targetPath = "16-libs-release-local/${currentDate}/"
+
+            def uploadSpec = """{
+                "files": [
+                    {
+                        "pattern": "target/news-app.war",
+                        "target": "${targetPath}"
+                    }
+                ]
+            }"""
+
+            server.upload(spec: uploadSpec)
+            server.publishBuildInfo(buildInfo)
+        }
+    }
+}
+
 // end stages
 
     post {
@@ -66,5 +86,4 @@ rtBuildInfo()
             echo 'Build or deployment failed. Check logs for details.'
         }
     }
-}
 }
