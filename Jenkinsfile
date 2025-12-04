@@ -9,6 +9,7 @@ pipeline {
     }
 
     stages {
+
         stage('Checkout') {
             steps {
                 git branch: 'feature-2', url: 'https://github.com/SwetaRath/news-app-devops.git'
@@ -37,7 +38,6 @@ pipeline {
             steps {
                 sh '''
                     TOMCAT_PATH="/opt/tomcat10/webapps"
-                    WAR_FILE="target/news-app.war"
 
                     echo "Cleaning old deployment..."
                     sudo rm -rf $TOMCAT_PATH/news-app $TOMCAT_PATH/news-app.war
@@ -53,30 +53,29 @@ pipeline {
         }
 
         stage('Push the artifacts into JFrog Artifactory') {
-    steps {
-        script {
-            // Define the server (matches Jenkins > Manage Credentials > Artifactory)
-            def server = Artifactory.server('jfrog')
+            steps {
+                script {
+                    def server = Artifactory.server('jfrog')
+                    def buildInfo = server.newBuildInfo()
 
-            def currentDate = new java.text.SimpleDateFormat("yyyy-MM-dd_HH-mm").format(new Date())
-            def targetPath = "16-libs-release-local/${currentDate}/"
+                    def currentDate = new java.text.SimpleDateFormat("yyyy-MM-dd_HH-mm").format(new Date())
+                    def targetPath = "${TARGET_REPO}/${currentDate}/"
 
-            def uploadSpec = """{
-                "files": [
-                    {
-                        "pattern": "target/news-app.war",
-                        "target": "${targetPath}"
-                    }
-                ]
-            }"""
+                    def uploadSpec = """{
+                        "files": [
+                            {
+                                "pattern": "target/news-app.war",
+                                "target": "${targetPath}"
+                            }
+                        ]
+                    }"""
 
-            server.upload(spec: uploadSpec)
-            server.publishBuildInfo(buildInfo)
+                    server.upload(spec: uploadSpec)
+                    server.publishBuildInfo(buildInfo)
+                }
+            }
         }
     }
-}
-
-// end stages
 
     post {
         success {
