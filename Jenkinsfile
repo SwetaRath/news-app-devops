@@ -1,12 +1,11 @@
 pipeline {
     agent { label 'slave2' }
-    environment {
-        // REPLACE these two values
-        ART_URL = 'https://trial80p3wb.jfrog.io'   // <- replace with your Artifactory URL
-        TARGET_REPO = '16-libs-release-local'                  // <- replace with repo name (generic-local, libs-release-local, etc.)
 
-        // Jenkins credential containing JFrog API Key / token (Secret Text)
+    environment {
+        ART_URL = 'https://trial80p3wb.jfrog.io'
+        TARGET_REPO = '16-libs-release-local'
         ART_API_KEY = credentials('jfrog-token')
+        WAR_FILE = "target/news-app.war"
     }
 
     stages {
@@ -15,21 +14,24 @@ pipeline {
                 git branch: 'feature-2', url: 'https://github.com/SwetaRath/news-app-devops.git'
             }
         }
+
         stage('Build') {
             steps {
                 sh 'mvn clean package -DskipTests=false'
             }
         }
+
         stage('Run Tests') {
             steps {
                 sh 'mvn test'
             }
         }
+
         stage('Check User') {
-    steps {
-        sh 'whoami'
-    }
-}
+            steps {
+                sh 'whoami'
+            }
+        }
 
         stage('Deploy WAR to Tomcat') {
             steps {
@@ -49,31 +51,26 @@ pipeline {
                 '''
             }
         }
-    }
-    stage('Push the artifacts into JFrog Artifactory') {
+
+        stage('Push the artifacts into JFrog Artifactory') {
             steps {
                 script {
-                    // Get the current date and time in the format: yyyy-MM-dd_HH-mm
                     def currentDate = new java.text.SimpleDateFormat("yyyy-MM-dd_HH-mm").format(new Date())
-
-                    // Define the target path with the timestamp
                     def targetPath = "16-libs-release-local/${currentDate}/"
 
-                    // Upload the built WAR to JFrog Artifactory with the timestamped path
                     rtUpload(
                         serverId: "jfrog",
                         spec: """{
-                            "files": [
-                                {
-                                    "pattern": "${WAR_FILE}",
-                                    "target": "${targetPath}"
-                                }
-                            ]
+                            "files": [{
+                                "pattern": "${WAR_FILE}",
+                                "target": "${targetPath}"
+                            }]
                         }"""
                     )
                 }
             }
         }
+
     } // end stages
 
     post {
