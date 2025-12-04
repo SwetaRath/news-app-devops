@@ -57,7 +57,7 @@ pipeline {
                     def currentDate = new java.text.SimpleDateFormat("yyyy-MM-dd_HH-mm").format(new Date())
 
                     // Define the target path with the timestamp
-                    def targetPath = "pradeep.devops.releases/${currentDate}/"
+                    def targetPath = "16-libs-release-local/${currentDate}/"
 
                     // Upload the built WAR to JFrog Artifactory with the timestamped path
                     rtUpload(
