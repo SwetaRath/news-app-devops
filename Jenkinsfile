@@ -64,7 +64,7 @@ pipeline {
 
                     // Upload the built WAR to JFrog Artifactory with the timestamped path
                     rtUpload(
-                        serverId: "trial-artifactory",
+                        serverId: "ART",
                         spec: """{
                             "files": [
                                 {
