@@ -66,5 +66,10 @@
       </plugin>
     </plugins>
   </build>
-
+<distributuionMangement>
+         <16-libs-release>
+                  <id>jfrog-token</id>
+                  <url>https://trial80p3wb.jfrog.io/artifactory/16-libs-release/</url>
+         </16-libs-release>
+</distributuionMangement>
 </project>
