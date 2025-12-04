@@ -1,43 +1,40 @@
 pipeline {
     agent { label 'slave2' }
-
     environment {
-        ART_URL = 'https://trial80p3wb.jfrog.io'
-        TARGET_REPO = '16-libs-release-local'
+        // REPLACE these two values
+        ART_URL = 'https://trial80p3wb.jfrog.io'   // <- replace with your Artifactory URL
+        TARGET_REPO = '16-libs-release-local'                  // <- replace with repo name (generic-local, libs-release-local, etc.)
+
+        // Jenkins credential containing JFrog API Key / token (Secret Text)
         ART_API_KEY = credentials('jfrog-token')
-        WAR_FILE = "target/news-app.war"
     }
-
     stages {
-
         stage('Checkout') {
             steps {
                 git branch: 'feature-2', url: 'https://github.com/SwetaRath/news-app-devops.git'
             }
         }
-
         stage('Build') {
             steps {
                 sh 'mvn clean package -DskipTests=false'
             }
         }
-
         stage('Run Tests') {
             steps {
                 sh 'mvn test'
             }
         }
-
         stage('Check User') {
-            steps {
-                sh 'whoami'
-            }
-        }
+    steps {
+        sh 'whoami'
+    }
+}
 
         stage('Deploy WAR to Tomcat') {
             steps {
                 sh '''
                     TOMCAT_PATH="/opt/tomcat10/webapps"
+                    WAR_FILE="target/news-app.war"
 
                     echo "Cleaning old deployment..."
                     sudo rm -rf $TOMCAT_PATH/news-app $TOMCAT_PATH/news-app.war
@@ -51,32 +48,7 @@ pipeline {
                 '''
             }
         }
-
-        stage('Push the artifacts into JFrog Artifactory') {
-            steps {
-                script {
-                    def server = Artifactory.server('jfrog')
-                    def buildInfo = server.newBuildInfo()
-
-                    def currentDate = new java.text.SimpleDateFormat("yyyy-MM-dd_HH-mm").format(new Date())
-                    def targetPath = "${TARGET_REPO}/${currentDate}/"
-
-                    def uploadSpec = """{
-                        "files": [
-                            {
-                                "pattern": "target/news-app.war",
-                                "target": "${targetPath}"
-                            }
-                        ]
-                    }"""
-
-                    server.upload(spec: uploadSpec)
-                    server.publishBuildInfo(buildInfo)
-                }
-            }
-        }
     }
-
     post {
         success {
             echo 'Build and deployment completed successfully!'
