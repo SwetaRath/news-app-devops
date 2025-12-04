@@ -53,31 +53,34 @@ pipeline {
             }
         }
 
-        stage('Push the artifacts into JFrog Artifactory') {
-            steps {
-                script {
-                    // Get the current date and time in the format: yyyy-MM-dd_HH-mm
-                    def currentDate = new java.text.SimpleDateFormat("yyyy-MM-dd_HH-mm").format(new Date())
+stage('Push the artifacts into JFrog Artifactory') {
+    steps {
+        script {
+            // Get the current date and time in the format: yyyy-MM-dd_HH-mm
+            def currentDate = new java.text.SimpleDateFormat("yyyy-MM-dd_HH-mm").format(new Date())
 
-                    // Define the target path with the timestamp
-                    def targetPath = "16-libs-release/${currentDate}/"
+            // Define the target path with the timestamp
+            def targetPath = "16-libs-release/${currentDate}/"
 
-                    // Upload the built WAR to JFrog Artifactory with the timestamped path
-                    rtUpload(
-                        def server = Artifactory.server('ART'),
-                        spec: """{
-                            "files": [
-                                {
-                                    "pattern": "${WAR_FILE}",
-                                    "target": "${targetPath}"
-                                }
-                            ]
-                        }"""
-                    )
-                }
-            }
+            // Resolve the Artifactory server (ensure 'ART' exists as a configured server ID)
+            def server = Artifactory.server('ART')   // <-- change 'ART' if your server ID is different
+
+            // Define upload spec
+            def uploadSpec = """{
+                "files": [
+                    {
+                        "pattern": "${WAR_FILE}",
+                        "target": "${targetPath}"
+                    }
+                ]
+            }"""
+
+            // Upload to Artifactory
+            rtUpload server: server, spec: uploadSpec
         }
-    } // end stages
+    }
+}
+ // end stages
 
     post {
         success {
